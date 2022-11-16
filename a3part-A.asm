@@ -194,27 +194,25 @@ rcall lcd_init
 ; ****************************************************
 
 start:
-
+	rjmp timer3
 stop:
 	rjmp stop
 
 
 timer1:
-
 check_button:
 	push r23
 	push r16
+	push r17
 	push XH
 	push XL
 	push ZL
 	push ZH
 
+	ldi r17, 0x01
 	lds r16, ADCSRA
 	ori r16, 0x40
 	sts ADCSRA, r16
-
-
-
 wait:
 	lds r16, ADCSRA
 	andi r16, 0x40
@@ -227,23 +225,65 @@ wait:
 	ldi ZH, high(BUTTON_SELECT_ADC)
 
 	clr r23
-		; if DATAH:DATAL < BOUNDARY_H:BOUNDARY_L
-		;     r23=1  "right" button is pressed
-		; else
-		;     r23=0
-		
+	
 	cp XL, ZL
 	cpc XH, ZH
 	brsh skip		
-	ldi r23,1
+	sts BUTTON_IS_PRESSED, r17
 skip:
 	pop ZH
 	pop ZL
 	pop XL
 	pop XH
+	pop r17
 	pop r16
 	pop r23
 	reti
+
+
+timer3:
+	in r17, TIFR3
+	sbrc r17, OCF3A
+	rjmp timer3
+
+	ldi r17, 1<<OCF3A
+	out TIFR3, r17
+
+	rjmp button_press
+
+button_press:
+	ldi r17, 1
+	ldi r18, 15
+	ldi r19, 0
+
+	push r17
+	push r18
+	rcall lcd_gotoxy
+	pop r18
+	pop r17
+
+	lds r17, BUTTON_IS_PRESSED
+	sts BUTTON_IS_PRESSED, r19
+	
+	sbrc r17, 0
+	rjmp currently_pressed
+	rjmp default_char
+	
+	
+currently_pressed:
+	ldi r17, '*'
+	push r17
+	rcall lcd_putchar
+	pop r17
+	rjmp timer3
+
+default_char:
+	ldi r17, '-'
+	push r17
+	rcall lcd_putchar
+	pop r17
+	rjmp timer3
+	
 
 
 
