@@ -119,7 +119,18 @@ reset:
 ; **** BEGINNING OF FIRST "STUDENT CODE" SECTION ****
 ; ***************************************************
 
-rcall lcd_init
+.def tmp = r20
+
+ldi tmp, low(RAMEND)
+out SPL, tmp
+ldi tmp, high(RAMEND)
+out SPH , tmp
+
+call lcd_init
+
+ldi r16, 0x87 
+sts ADCSRA, r16
+
 
 ; Anything that needs initialization before interrupts
 ; start must be placed here.
@@ -207,7 +218,9 @@ check_button:
 	push XH
 	push XL
 	push ZL
-	push ZH
+	push ZH	
+	
+	//to:do save sreg
 
 	ldi r17, 0x01
 	lds r16, ADCSRA
@@ -230,7 +243,11 @@ wait:
 	cpc XH, ZH
 	brsh skip		
 	sts BUTTON_IS_PRESSED, r17
-skip:
+	rjmp skiper
+skip:	
+	sts BUTTON_IS_PRESSED, r23
+	;to:Do opposite of save sreg
+skiper:
 	pop ZH
 	pop ZL
 	pop XL
@@ -263,7 +280,6 @@ button_press:
 	pop r17
 
 	lds r17, BUTTON_IS_PRESSED
-	sts BUTTON_IS_PRESSED, r19
 	
 	sbrc r17, 0
 	rjmp currently_pressed
