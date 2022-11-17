@@ -4,8 +4,8 @@
 ; Part A of assignment #3
 ;
 ;
-; Student name:Aaron Quan	
-; Student ID: V00992743
+; Student name:AAron
+; Student ID:
 ; Date of completed work:
 ;
 ; **********************************
@@ -118,7 +118,6 @@ reset:
 ; ***************************************************
 ; **** BEGINNING OF FIRST "STUDENT CODE" SECTION ****
 ; ***************************************************
-
 .def tmp = r20
 
 ldi tmp, low(RAMEND)
@@ -127,11 +126,9 @@ ldi tmp, high(RAMEND)
 out SPH , tmp
 
 call lcd_init
-
+ldi r25, 'a'
 ldi r16, 0x87 
 sts ADCSRA, r16
-
-
 ; Anything that needs initialization before interrupts
 ; start must be placed here.
 
@@ -220,6 +217,8 @@ check_button:
 	push ZL
 	push ZH	
 	
+	lds r16, SREG
+	push r16
 	//to:do save sreg
 
 	ldi r17, 0x01
@@ -248,6 +247,9 @@ skip:
 	sts BUTTON_IS_PRESSED, r23
 	;to:Do opposite of save sreg
 skiper:
+
+	pop r16
+	sts SREG, r16
 	pop ZH
 	pop ZL
 	pop XL
@@ -259,49 +261,49 @@ skiper:
 
 
 timer3:
-	in r17, TIFR3
-	sbrc r17, OCF3A
+	in temp, TIFR3
+	sbrs temp, OCF3A
 	rjmp timer3
 
-	ldi r17, 1<<OCF3A
-	out TIFR3, r17
+	ldi temp, 1<<OCF3A
+	out TIFR3, temp
 
 	rjmp button_press
 
 button_press:
-	ldi r17, 1
+	ldi temp, 1
 	ldi r18, 15
 	ldi r19, 0
 
-	push r17
+	push temp
 	push r18
 	rcall lcd_gotoxy
 	pop r18
-	pop r17
-
-	lds r17, BUTTON_IS_PRESSED
+	pop temp
 	
-	sbrc r17, 0
+	
+
+	
+	lds temp, BUTTON_IS_PRESSED
+	
+	sbrc temp, 0
 	rjmp currently_pressed
 	rjmp default_char
 	
 	
 currently_pressed:
-	ldi r17, '*'
-	push r17
+	ldi temp, '*'
+	push temp
 	rcall lcd_putchar
-	pop r17
+	pop temp
 	rjmp timer3
 
 default_char:
-	ldi r17, '-'
-	push r17
+	ldi temp, '-'
+	push temp
 	rcall lcd_putchar
-	pop r17
+	pop temp
 	rjmp timer3
-	
-
-
 
 ; timer3:
 ;
