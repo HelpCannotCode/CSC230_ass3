@@ -1,7 +1,7 @@
 ;
-; a3part-A.asm
+; a3part-D.asm
 ;
-; Part A of assignment #3
+; Part D of assignment #3
 ;
 ;
 ; Student name:
@@ -79,7 +79,7 @@
 #define BUTTON_DOWN_MASK  0b00000100
 #define BUTTON_LEFT_MASK  0b00001000
 
-#define BUTTON_RIGHT_ADC  0x032
+#define BUTTON_RIGHT_ADC  0x052   ;was 0x032
 #define BUTTON_UP_ADC     0x0b0   ; was 0x0c3
 #define BUTTON_DOWN_ADC   0x160   ; was 0x17c
 #define BUTTON_LEFT_ADC   0x22b
@@ -120,6 +120,7 @@ reset:
 ; ***************************************************
 .def tmp = r20
 
+
 ldi tmp, low(RAMEND)
 out SPL, tmp
 ldi tmp, high(RAMEND)
@@ -142,6 +143,9 @@ load_TOP_LINE_CONTENT:
 		st Z+, r16
 		dec r17
 		brne load_TOP_LINE_CONTENT
+
+ldi r16, 0
+sts CURRENT_CHAR_INDEX, r16
 
 ;ldi XH, high(TOP_LINE_CONTENT)
 ;ldi XL, low(TOP_LINE_CONTENT)
@@ -416,10 +420,12 @@ up_pressed:
 	pop temp
 
 	ldi temp, 0
+	lds r18, CURRENT_CHAR_INDEX
+
 	push temp
-	push temp
+	push r18
 	rcall lcd_gotoxy
-	pop temp
+	pop r18
 	pop temp
 
 	lds temp, TOP_LINE_CONTENT
@@ -448,11 +454,14 @@ down_pressed:
 	pop temp
 
 	ldi temp, 0
+	lds r18, CURRENT_CHAR_INDEX
+
 	push temp
-	push temp
+	push r18
 	rcall lcd_gotoxy
+	pop r18
 	pop temp
-	pop temp
+
 	lds temp, TOP_LINE_CONTENT
 	push temp
 	rcall lcd_putchar
@@ -611,13 +620,17 @@ button_hold:
 	rjmp end_t4
 	cp r19, r16
 	breq set_0
+	cpi r17, 0b00000001
+	breq go_right
+	cpi r17, 0b00001000
+	breq go_left
 	jmp find_curr
 updown_button:
 	lds r17, LAST_BUTTON_PRESSED
-	cpi r17, 0b00000010
-	breq case_up // the up button is pressed and is currently pressed use the curr
-	cpi r17, 0b00000100
-	breq before_curr// if the down button pressed go to find the prev number
+	sbrs r17, 0b00000010
+	jmp case_up // the up button is pressed and is currently pressed use the curr
+	sbrs r17, 0b00000100
+	jmp before_curr// if the down button pressed go to find the prev number
 	rjmp end_t4
 
 set_0: 
@@ -625,11 +638,42 @@ set_0:
 	sts TOP_LINE_CONTENT, r23
 	jmp end_t4
 
+go_right:
+	lds r23, CURRENT_CHAR_INDEX
+	cpi r23, 16
+	breq go_to_col_0
+	inc r23
+	sts CURRENT_CHAR_INDEX, r23
+	jmp end_t4
+go_to_col_0:
+	ldi r23, 0
+	sts CURRENT_CHAR_INDEX, r23
+	jmp end_t4
+
+go_left:
+	lds r23, CURRENT_CHAR_INDEX
+	cpi r23, 0 
+	breq go_to_col_15
+	dec r23
+	sts CURRENT_CHAR_INDEX, r23
+	jmp end_t4
+go_to_col_15:
+	ldi r23, 15
+	sts CURRENT_CHAR_INDEX, r23
+	jmp end_t4
+
 
 find_curr:
+	ldi r17, CURRENT_CHAR_INDEX
+	ldi ZH, high(TOP_LINE_CONTENT<<1)
+	ldi ZL, low(TOP_LINE_CONTENT<<1)
+get_index:
+	dec r17
+	lpm r16, Z+
+	brne get_index
+
 	ldi ZH, high(AVAILABLE_CHARSET<<1)
-	ldi ZL, low(AVAILABLE_CHARSET<<1)
-	lds r16, TOP_LINE_CONTENT
+	ldi ZL, low(AVAILABLE_CHARSET<<1)	lpm r16, Z
 	ldi r17, '_'
 
 keep_find:
