@@ -75,68 +75,86 @@ ISR(TIMER3_COMPA_vect) {
  */
 
 void led_state(uint8_t LED, uint8_t state) {
-	
-	switch (LED)
-	{
+switch (LED)
+{
 	case 0:
-		if(state){
-			PORTL &= 0b01111111;
-		}
-		else{
-			PORTL |= 0b10000000;
-		}
-		break;
-	case 1:
-		if(state){
-			PORTL &= 0b11011111;
-		}
-		else{
-			PORTL |= 0b00100000;
-		}
-		break;
-	case 2:
-		if(state){
-			PORTL &= 0b11110111;
-		}
-		else{
-			PORTL |= 0b00001000;
-		}
-		break;
-	case 3:
-		if(state){
-			PORTL &= 0b11111101;
-		}
-		else{
-			PORTL |= 0b00000010;
-		}		
-		break;
-	default :
-		break;
+	if(state){
+		PORTL |= 0b10000000;
 	}
+	else{
+		PORTL &= 0b01111111;
+	}
+	break;
+	case 1:
+	if(state){
+		PORTL |= 0b00100000;
+	}
+	else{
+		PORTL &= 0b11011111;
+	}
+	break;
+	case 2:
+	if(state){
+		PORTL |= 0b00001000;
+	}
+	else{
+		PORTL &= 0b11110111;
+	}
+	break;
+	case 3:
+	if(state){
+		PORTL |= 0b00000010;
+	}
+	else{
+		PORTL &= 0b11111101;
+	}
+	break;
+	default :
+	break;
+}
 }
 
 
 
 void SOS() {
-    uint8_t light[] = {
-        0x1, 0, 0x1, 0, 0x1, 0,
-        0xf, 0, 0xf, 0, 0xf, 0,
-        0x1, 0, 0x1, 0, 0x1, 0,
-        0x0
-    };
+   uint8_t light[] = {
+	   0x1, 0, 0x1, 0, 0x1, 0,
+	   0xf, 0, 0xf, 0, 0xf, 0,
+	   0x1, 0, 0x1, 0, 0x1, 0,
+	   0x0
+   };
 
-    int duration[] = {
-        100, 250, 100, 250, 100, 500,
-        250, 250, 250, 250, 250, 500,
-        100, 250, 100, 250, 100, 250,
-        250
-    };
+   int duration[] = {
+	   100, 250, 100, 250, 100, 500,
+	   250, 250, 250, 250, 250, 500,
+	   100, 250, 100, 250, 100, 250,
+	   250
+   };
 
-	int length = 19;
-	
-	for(int i = 0; i <length; i++){
-		led_state(light[i],duration[i]);
-	}
+   int length = 19;
+   
+   for(int i = 0; i <length; i++){
+	   //check each case of light arrangement and set lights accordingly
+	   switch (light[i])
+	   {
+	   case 0x1:
+	   led_state(0,1);
+	   break;
+	   case 0xf:
+	   led_state(0,1);
+	   led_state(1,1);
+	   led_state(2,1);
+	   led_state(3,1);
+	   break;
+	   case 0:
+	   led_state(0,0);
+	   led_state(1,0);
+	   led_state(2,0);
+	   led_state(3,0);
+	   break;
+	   }
+	   _delay_ms(duration[i]);
+   }
 }
 
 
@@ -144,14 +162,14 @@ void glow(uint8_t LED, float brightness) {
 	long int threshold = PWM_PERIOD *brightness;
 	for(;;){
 		if (count < threshold){
-			led_state(LED, 0);
+			led_state(LED, 1);
 		}
 		else if(count < PWM_PERIOD){
-			led_state(LED, 1);
+			led_state(LED, 0);
 		}
 		else{
 			count = 0;
-			led_state(LED, 0);
+			led_state(LED, 1);
 		}
 	}
 }
@@ -160,23 +178,27 @@ void glow(uint8_t LED, float brightness) {
 
 void pulse_glow(uint8_t LED) {
 	long int threshold = PWM_PERIOD;
+	long int hinzufugen = 30;
 	for(;;){
 		if (count < threshold){
-			led_state(LED, 0);
+			led_state(LED, 1);
 		}
 		else if(count < PWM_PERIOD){
-			led_state(LED, 1);
+			led_state(LED, 0);
 		}
 		else{
 			if(slow_count >PWM_PERIOD){
-				threshold += 10;
+				threshold += hinzufugen;
 				if(threshold > 500){
-					threshold = 0;
+					hinzufugen = -30;
+				}
+				if(threshold < 0){
+					hinzufugen = 30;
 				}
 				slow_count = 0;
 			}
 			count = 0;
-			led_state(LED, 0);
+			led_state(LED, 1);
 		}
 	}
 }
@@ -237,8 +259,8 @@ int main() {
  * *********************************************
  */
 
-/* This code could be used to test your work for part A.
-
+ //This code could be used to test your work for part A.
+/*
 	led_state(0, 1);
 	_delay_ms(1000);
 	led_state(2, 1);
@@ -251,24 +273,23 @@ int main() {
 	_delay_ms(1000);
 	led_state(1, 0);
 	_delay_ms(1000);
- */
-
+ 
+*/
 /* This code could be used to test your work for part B.
-
-	SOS();
- */
+*/
+	//SOS();
+ 
 
 /* This code could be used to test your work for part C.
-
-	glow(2, .01);
- */
+*/
+	//glow(2, .1);
 
 
 
 /* This code could be used to test your work for part D.
-
-	pulse_glow(3);
- */
+*/
+	//pulse_glow(3);
+ 
 
 
 /* This code could be used to test your work for the bonus part.
